@@ -24,8 +24,8 @@ the program takes the following steps
 4. remove the largest and smallest run 
 4. Find the mean of the remaining runs
 5. Save the results to a save file in ./Past
-6. Load a selection of save files form ./Past 
-7. Display the selection in a table format with speedup 
+6. Load a selection of save files from ./Past 
+7. Display the selection in a table 
 
 Many of the operations can be configured using the constants at the start of the file.
 
