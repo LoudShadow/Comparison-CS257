@@ -48,7 +48,7 @@ This program assumes the following file structure
   - main.c
   - ...
 
-[Past] a folder contaning all the past runs as JSON created by comapre.py
+[Past] a folder contaning all the past runs as JSON created by compare.py
 
 [main] is the folder provided as part of the CW
 
