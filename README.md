@@ -17,7 +17,7 @@
 
 Compare.py is a python file to easily compare between versions of the ACA CW
 
-run with `python3 compare/py`
+run with `python3 compare.py`
 
 the program takes the following steps:
 
