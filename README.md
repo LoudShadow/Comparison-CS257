@@ -80,7 +80,7 @@ run
 
 A new file will appear in Past.
 
-In compare.py add the name `<run name>` to `OTHER_FILES`.
+In compare.py add the name `<run name>.json` to `OTHER_FILES`.
 
 When displaying results `<run name>.json` will allways be show.
 
