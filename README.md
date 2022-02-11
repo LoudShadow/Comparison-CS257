@@ -1,7 +1,14 @@
-> This file has been tested on DCS
+> This file has been tested on Linux and DCS(not batch)
 > Operation on windows and macOS is unknown
 >
-> This is provided with no guarantees of accuracy always verify data for yourself
+> A file for the batch compute may be provided whenever I can be bothered
+>
+> Operation with the batch compute system is unknown
+>
+> This is provided with no guarantees of accuracy. Always verify data for yourself
+> 
+> Note past runs may be on different circumstances e.g (battery/wall power or number of chrome tabs open) 
+> so historic results may not be reliable.
 >
 > I hope this helps you and good luck with the CW
 
@@ -24,8 +31,8 @@ the program takes the following steps
 4. remove the largest and smallest run 
 4. Find the mean of the remaining runs
 5. Save the results to a save file in ./Past
-6. Load a selection of save files from ./Past 
-7. Display the selection in a table 
+6. Load a selection of save files form ./Past 
+7. Display the selection in a table format with speedup 
 
 Many of the operations can be configured using the constants at the start of the file.
 
@@ -52,10 +59,14 @@ BRANCH.txt - Branch information first line should be branch name and is read to 
 
 Makefile... --- the files provided
 
-## -c
-adding the argument -c will combine all of the JSON files into one for easy export.
 
-From this is is possible to create things like graphs.
+## Arguments
+  * -h -help --help The help page
+  * -com            Runs a standard benchmark un-altered 
+  * -n &lt;name&gt;       Adds a name to the run for easier comparison, default: time
+  * -c              Combines all the existing json files into one, IDK maybe usefull
+
+> note when using -n previous versions of the file will be overwritten
 
 ## Base
 It may be desirable to include a base run to compare all changes to.
@@ -65,33 +76,21 @@ e.g a version with no optimizations.
 with the desired code
 
 run
-`python3 compare.py`.
+`python3 compare.py -n <run name>`.
 
 A new file will appear in Past.
 
-Rename the file to desired name e.g `unoptimised.json`.
+In compare.py add the name `<run name>` to `OTHER_FILES`.
 
-Edit the file change `title` to the desired name e.g `unoptimised`.
-
-In compare.py add the name `base` to `OTHER_FILES`.
-
-When displaying results `unoptimised.json` will allways be show.
-
-
+When displaying results `<run name>.json` will allways be show.
 
 ## Configuration
 
 See the constants at the start of compare.py
 
 ## JSON
-the program creates json files for each run
+the program creates json files for each run and is compared against
 
-* **date** : datetime the file was run (start time)
-* **title** : title to show in comparison table (defaults to date)
-* **alt** : the name of the branch that the program is from 
-* **dimensions**: The arguments applied
-* **final-residual** result from the program
-* **time-total**
-* **time-ddot**
-* **time-waxpy**
-* **time-sparsemv**
+## Notes
+While some error checkign has been made to ensure the script can run,
+don't push it

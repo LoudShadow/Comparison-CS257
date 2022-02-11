@@ -8,15 +8,17 @@ import sys
 
 from pyrsistent import thaw
 
-# This file has been tested on DCS
+# This file has been tested on Linux and DCS(not batch)
 # Operation on windows and macOS is unknown
+#
+# A file for the batch compute may be provided whenever I can be bothered
 #
 # Operation with the batch compute system is unknown
 #
 # This is provided with no guarantees of accuracy. Always verify data for yourself
 # 
 # Note past runs may be on different circumstances e.g (battery/wall power or number of chrome tabs open) 
-# so historic results may not be reliable used.
+# so historic results may not be reliable.
 #
 # I hope this helps you and good luck with the CW
 
@@ -30,7 +32,7 @@ PROGRAM_DIRECTORY="./main"              #Directory of the files (make, acacgs...
 MAKE = True                             # Should the make command be run (clean then make)
 RUNNING_PROGRAM=True                    # Should the program run acacgs
 RUN_COUNT=5                             # Number of times to run the program
-ARGS= ["50","50","50"]                  # program args
+ARGS= ["100","100","100"]                  # program args
 
 FILES_TO_AVERAGE = 1                    # If not running program how many files are there
 REMOVE_OUTLIERS=True                    # Should outliers be removed (largest+smallest) this is how the submissions will be marked
@@ -66,6 +68,14 @@ def getDataFloat(row):
     data=data.split(" ")[0]
     return float(data)
 
+def getDataFloatEq(row):
+    row=row.rstrip()
+    data= row.split("=")[1]
+    data= data.lstrip()
+    data=data.split(" ")[0]
+    return float(data)
+
+
 #given an array of file paths return a dictionary of the average times
 #and config values
 # The dimension for all the files must be the same
@@ -88,8 +98,8 @@ def calcAverage(files):
     for i in dicts[1:]:
         if i["dimensions"] != average["dimensions"]:            # Sanity check
             raise ValueError("Dimensions must match")
-        if i["final-residual"] != average["final-residual"]:    # Check there is no random number generator
-            raise ValueError("final residuals must match")
+        if i["difference"] != average["difference"]:    # Check there is no random number generator
+            raise ValueError("differences must match (identical runs produce identical results)")
 
         average["time-total"] += i["time-total"]
         average["time-ddot"] += i["time-ddot"]
@@ -100,6 +110,13 @@ def calcAverage(files):
     average["time-ddot"] = round(average["time-ddot"] / len(dicts),6)
     average["time-waxpy"] = round(average["time-waxpy"] / len(dicts),6)
     average["time-sparsemv"] = round(average["time-sparsemv"] / len(dicts),6)
+
+    if average["difference"] > 1e-14:
+        print("##################################################################")
+        print("##################################################################")
+        print("WARNING: difference between solution and exact is > 1e-14")
+        print("##################################################################")
+        print("##################################################################")
 
     return(average)
     
@@ -121,7 +138,6 @@ def runMany(directory):
         totalTime=end-start
         if totalTime<1.2: #Hacky solution to prevent two files having the same name
             time.sleep(1.2-totalTime)
-
     files =findDated("./",RUN_COUNT,"txt")
     return files
 
@@ -135,9 +151,24 @@ def findDated(directory,count,extention):
     dated_files= list(filter(lambda x:re.fullmatch(regexp,x),txt_files))
     dated_files.sort()
     dated_files=dated_files[-count:]
-    if count==0:
+    if count<=0:
         dated_files=[]
     return dated_files
+
+#gets the last json files, reads all files then sorts them by the internal date
+def findLastJSON(directory,count):
+    all_files = os.listdir(directory)
+    JSON_files= list(filter(lambda x:x.endswith(f".json"),all_files))
+    files=[]
+    for i in JSON_files:
+        with open(f"{directory}/{i}") as file:
+            values = json.load(file)
+            files.append( (i,values["date"]) )
+    files.sort(key= lambda x:x[1])
+    files=files[-count:]
+    if count<=0:
+        files=[]
+    return list(map(lambda x:x[0],files))
 
 # Converts an output file provided by the acags to a dictionary 
 def fileToDict(filePath):
@@ -149,7 +180,7 @@ def fileToDict(filePath):
         values["date"] = filePath.replace(".txt","").replace(".",".")
         values["alt"]= ""
         values["dimensions"] = getDataStr(data[3])
-        values["final-residual"] = getDataFloat(data[5])
+        values["difference"] = getDataFloatEq(data[25])
         values["time-total"] = getDataFloat(data[8])
         values["time-ddot"] = getDataFloat(data[9])
         values["time-waxpy"] = getDataFloat(data[10])
@@ -182,7 +213,7 @@ def getBranchName(path):
 def showFiles():
     all_files = os.listdir(SAVETO)
     json_files= list(filter(lambda x:x.endswith(".json"),all_files))
-    dated_files=findDated(SAVETO,DISPLAY_LAST,"json")
+    dated_files=findLastJSON(SAVETO,DISPLAY_LAST)
     selected_files= list(filter(lambda x:x in OTHER_FILES,json_files))
     selected_files.sort(key=lambda x:OTHER_FILES.index(x))
 
@@ -197,14 +228,14 @@ def showFiles():
 
     for i in filesData:
         print(f"Data on dimensions: {i}")
-        rows=["          ","          ","residual :","Total    :","ddot     :","wxapy    :","sparsemv :"]
+        rows=["            ","            ","difference:","Total      :","ddot       :","wxapy      :","sparsemv   :"]
         c=0
         b=[]
         for j in filesData[i]:
             if c==0:
                 rows[0] += "{:<25}".format(j["alt"]) 
                 rows[1] += "{:<25}".format(j["title"]) 
-                rows[2] += "{:<25}".format(j["final-residual"]) 
+                rows[2] += "{:<25}".format(j["difference"]) 
                 rows[3] += "{:<25}".format(j["time-total"])
                 rows[4] += "{:<25}".format(j["time-ddot"])
                 rows[5] += "{:<25}".format(j["time-waxpy"])
@@ -213,8 +244,8 @@ def showFiles():
             else:
                 rows[0] += "{:<25}".format(j["alt"]) 
                 rows[1] += "{:<25}".format(j["title"]) 
-                identical="Y" if b['final-residual']==j['final-residual'] else "N"
-                rows[2] += '{:<25}'.format(f"{j['final-residual']}({ identical})")
+                identical="Y" if b['difference']==j['difference'] else "N"
+                rows[2] += '{:<25}'.format(f"{j['difference']}({ identical})")
                 speedup=(b['time-total']/j['time-total'])
                 rows[3] += '{:<25}'.format(f"{j['time-total']}({ speedup:5.3f}x)")
                 speedup=(b['time-ddot']/j['time-ddot'])
@@ -240,17 +271,51 @@ def combine():
     with open(f"combined.json","w+") as file:
         values=json.dump(data,file)
 
+def pHelp():
+    print("This is the help page")
+    print("""
+    ==================================================
+    Arguments
+    -h -help --help The help page
+    -com            Runs a standard benchmark un-altered 
+    -n <name>       Adds a name to the run for easier comparison, default: time
+    -c              Combines all the existing json files into one, IDK maybe usefull
+    ==================================================
+    For other settings see the constants at the top of the python file
+    """)
 
 if "-c" in sys.argv:
     combine()
+if "-h" in sys.argv or "-help" in sys.argv or "--help" in sys.argv:
+    pHelp()
+    exit()
 else:
-
+    title=""
+    if "-n" in sys.argv:
+        loc=sys.argv.index("-n")
+        if len(sys.argv) > loc+1:
+            title=sys.argv[loc+1]
+        else:
+            pHelp()
+            exit()
+    #Paramaters for the agreed comparision benchmark
+    if "-com" in sys.argv:
+        print("Cult Of Matt standard benchmark")
+        RUNNING_PROGRAM=True                    # Should the program run acacgs
+        RUN_COUNT=5                             # Number of times to run the program
+        ARGS= ["200","200","200"]                  # program args
+        FILES_TO_AVERAGE = 5                    # If not running program how many files are there
+        REMOVE_OUTLIERS=True                    # Should outliers be removed (largest+smallest) this is how the submissions will be marked
+                                                # NOTE the number of files being compared must be >= 3 if set
+        TIME_FOCUS="time-total"  
 
     if RUNNING_PROGRAM:
         files=runMany(PROGRAM_DIRECTORY)
         average=calcAverage(files)
         brachName=getBranchName(PROGRAM_DIRECTORY)
         average["alt"]=brachName
+        average["title"] = title if title !="" else average["title"]
+        print(f"title :{ average['title'] }")
         createSaveFile(average)
         removeFiles(files)
         showFiles()
@@ -259,5 +324,6 @@ else:
         average=calcAverage(files)
         brachName=getBranchName(PROGRAM_DIRECTORY)
         average["alt"]=brachName
+        average["title"] = title if title !="" else average["title"]
         createSaveFile(average)
         showFiles()
