@@ -92,5 +92,5 @@ See the constants at the start of compare.py
 the program creates json files for each run and is compared against
 
 ## Notes
-While some error checkign has been made to ensure the script can run,
+While some error checking has been made to ensure the script can run,
 don't push it
