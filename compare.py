@@ -6,7 +6,6 @@ import time
 import json
 import sys
 
-from pyrsistent import thaw
 
 # This file has been tested on Linux and DCS(not batch)
 # Operation on windows and macOS is unknown
